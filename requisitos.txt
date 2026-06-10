@@ -1,0 +1,9 @@
+Levantamento de Requisitos – Git Flow Visualizer
+
+O projeto Git Flow Visualizer tem como objetivo desenvolver uma aplicação web interativa capaz de representar visualmente as principais estratégias de versionamento utilizadas com Git. A ferramenta deverá permitir que usuários compreendam, de forma prática e intuitiva, como funcionam os fluxos de trabalho de branching, merges e integrações em diferentes metodologias de desenvolvimento.
+
+Como requisitos funcionais, o sistema deverá exibir diagramas animados de branches utilizando elementos gráficos em SVG, possibilitando a visualização da evolução do histórico de commits. Além disso, deverá oferecer simulações das operações de merge, rebase e cherry-pick, demonstrando visualmente os efeitos de cada ação sobre as branches envolvidas.
+
+A aplicação também deverá disponibilizar uma funcionalidade de alternância entre diferentes estratégias de versionamento, incluindo GitHub Flow, Git Flow e Trunk-Based Development, atualizando dinamicamente o diagrama conforme o modelo selecionado pelo usuário.
+
+Como requisito não funcional, a interface deverá ser responsiva, intuitiva e de fácil navegação, utilizando React para gerenciamento da interface e CSS Animations para proporcionar uma experiência visual fluida. Por fim, o projeto deverá conter um README detalhado explicando o funcionamento de cada estratégia, suas vantagens, desvantagens e os cenários mais adequados para sua utilização.
