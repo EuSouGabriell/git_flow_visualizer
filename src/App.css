@@ -3,6 +3,17 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  flex-direction: column;
   gap: 14px;
   margin-bottom: 18px;
+}
+
+.header_toggle {
+  background: "black";
+  display: "flex";
+  border: "1px solid #333";
+  border-radius: 9;
+  padding: 3;
+  gap: 2;
+  width: "fit-content";
 }
