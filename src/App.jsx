@@ -48,7 +48,28 @@ function App() {
       </div>
 
       <div className="controls" style={{ background: "orange" }}>
-        Controle
+        <div className="controls">
+          <div className="controls__branches">
+            <button>main</button>
+            <button>develop</button>
+            <button>feature/login</button>
+          </div>
+
+          <div className="controls__actions">
+            <button>Commit</button>
+
+            <select>
+              <option>main</option>
+              <option>develop</option>
+              <option>feature/login</option>
+            </select>
+
+            <button>Merge</button>
+            <button>Rebase</button>
+            <button>Cherry-pick</button>
+            <button>Reset</button>
+          </div>
+        </div>
       </div>
 
       <div className="content" style={{ background: "pink" }}>
