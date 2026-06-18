@@ -1,0 +1,50 @@
+.gitgraph {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+.gitgraph_tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.gitgraph_dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+.gitgraph_canvas {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 12px 8px;
+}
+
+.gitgraph_svg {
+  display: block;
+  width: 100%;
+  min-width: 400px;
+  height: auto;
+}
+
+.gitgraph_node {
+  transition: opacity 0.15s ease;
+}
+
+.gitgraph_node:hover circle:first-child {
+  fill-opacity: 0.2;
+}
