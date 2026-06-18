@@ -1,19 +1,28 @@
-.header {
+.app {
+  min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   flex-direction: column;
-  gap: 14px;
-  margin-bottom: 18px;
+  background: var(--bg-base);
 }
 
-.header_toggle {
-  background: "black";
-  display: "flex";
-  border: "1px solid #333";
-  border-radius: 9;
-  padding: 3;
-  gap: 2;
-  width: "fit-content";
+.app_body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.app_left {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+  min-width: 25%;
+  max-width: 50%;
+}
+
+.app_right {
+  flex: 2;
+  min-width: 25%;
+  max-width: 50%;
 }

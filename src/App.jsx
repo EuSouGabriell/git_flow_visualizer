@@ -1,82 +1,73 @@
-import { useState } from "react";
-import "./App.css";
+import { useState, useEffect } from 'react';
+import STRATEGIES from './data/strategies';
+import useGraphState from './hooks/useGraphState';
+import Header from './components/Header/Header';
+import GitGraph from './components/GitGraph/GitGraph';
+import Controls from './components/Controls/Controls';
+import InfoPanel from './components/InfoPanel/InfoPanel';
+import './App.css';
 
-function App() {
-  const [strategy, setStrategy] = useState("GitFlow");
+const STRATEGY_NAMES = Object.keys(STRATEGIES);
 
-  const strategies = ["GitFlow", "GitHub Flow", "Trunk-Based", "GitLab"];
+export default function App() {
+  const [strategy, setStrategy] = useState(STRATEGY_NAMES[0]);
+  const [activeBranch, setActiveBranch] = useState(STRATEGIES[STRATEGY_NAMES[0]].branches[0].id);
+  const [targetBranch, setTargetBranch] = useState(STRATEGIES[STRATEGY_NAMES[0]].branches[1]?.id ?? '');
+  const [selectedNode, setSelectedNode] = useState(null);
+
+  const { graphState, commit, merge, rebase, cherryPick, resetLast, reset } = useGraphState(strategy);
+
+  const branches = STRATEGIES[strategy].branches;
+  const info = STRATEGIES[strategy].info;
+
+  function handleStrategyChange(newStrategy) {
+    setStrategy(newStrategy);
+    const newBranches = STRATEGIES[newStrategy].branches;
+    setActiveBranch(newBranches[0].id);
+    setTargetBranch(newBranches[1]?.id ?? '');
+    setSelectedNode(null);
+    reset(newStrategy);
+  }
+
+  function handleBranchChange(branchId) {
+    setActiveBranch(branchId);
+    const other = branches.find(b => b.id !== branchId);
+    if (other) setTargetBranch(other.id);
+  }
 
   return (
-    <>
-      <div className="container" style={{ background: "red" }}>
-        <div className="header" style={{ background: "green" }}>
-          <div className="header_title">GitFlow Visualizer</div>
-          <div className="header_subtitle">
-            Estratégias de branching interativas
-          </div>
+    <div className="app">
+      <Header
+        strategy={strategy}
+        strategies={STRATEGY_NAMES}
+        onStrategyChange={handleStrategyChange}
+      />
+      <div className="app_body">
+        <div className="app_left">
+          <GitGraph
+            graphState={graphState}
+            branches={branches}
+            activeBranch={activeBranch}
+            selectedNode={selectedNode}
+            onNodeSelect={setSelectedNode}
+          />
+          <Controls
+            branches={branches}
+            activeBranch={activeBranch}
+            targetBranch={targetBranch}
+            onBranchChange={handleBranchChange}
+            onTargetChange={setTargetBranch}
+            onCommit={() => commit(activeBranch)}
+            onMerge={() => merge(activeBranch, targetBranch)}
+            onRebase={() => rebase(activeBranch, targetBranch)}
+            onCherryPick={() => cherryPick(activeBranch, selectedNode)}
+            onReset={() => resetLast(activeBranch)}
+          />
         </div>
-        {/* Toggle de estratégias */}
-        <div className="header_toggle">
-          {strategies.map((item) => {
-            const active = strategy === item;
-
-            return (
-              <button
-                key={item}
-                onClick={() => setStrategy(item)}
-                style={{
-                  padding: "7px 13px",
-                  borderRadius: 7,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: active ? 700 : 400,
-                  background: active ? "#22c55e" : "transparent",
-                  color: active ? "#000" : "#fff",
-                  transition: "all .2s ease",
-                }}
-              >
-                {item}
-              </button>
-            );
-          })}
+        <div className="app_right">
+          <InfoPanel info={info} strategyName={strategy} />
         </div>
       </div>
-
-      <div className="terminal_git" style={{ background: "red" }}>
-        Terminal
-      </div>
-
-      <div className="controls" style={{ background: "orange" }}>
-        <div className="controls">
-          <div className="controls__branches">
-            <button>main</button>
-            <button>develop</button>
-            <button>feature/login</button>
-          </div>
-
-          <div className="controls__actions">
-            <button>Commit</button>
-
-            <select>
-              <option>main</option>
-              <option>develop</option>
-              <option>feature/login</option>
-            </select>
-
-            <button>Merge</button>
-            <button>Rebase</button>
-            <button>Cherry-pick</button>
-            <button>Reset</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="content" style={{ background: "pink" }}>
-        conteudo
-      </div>
-    </>
+    </div>
   );
 }
-
-export default App;
