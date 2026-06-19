@@ -37,7 +37,7 @@
 }
 
 .info-section_title {
-  font-size: 9px;
+  font-size: 13px;
   font-family: var(--font-mono);
   font-weight: 500;
   text-transform: uppercase;
@@ -47,7 +47,7 @@
 }
 
 .info-section_text {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--text-secondary);
   line-height: 1.65;
 }
@@ -64,7 +64,7 @@
 }
 
 .info-section_item {
-  font-size: 12px;
+  font-size: 14px;
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   line-height: 1.4;
