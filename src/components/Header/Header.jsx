@@ -2,22 +2,21 @@ import './Header.css';
 
 export default function Header({ strategy, strategies, onStrategyChange }) {
   return (
-    <header className="header">
-      <div className="header_brand">
-        <div>
-          <h1 className="header_title">Git Flow Visualizer</h1>
-          <p className="header_subtitle">Estratégias de Branching Interativas</p>
-        </div>
+    <header className="product-header">
+      <div className="product-header__brand">
+        <h1 className="product-header__title">Git Flow Visualizer</h1>
+        <p className="product-header__subtitle">Estrategias de branching interativas</p>
       </div>
 
-      <nav className="header_nav" aria-label="Estratégias">
-        {strategies.map(s => (
+      <nav className="strategy-tabs" aria-label="Estrategias">
+        {strategies.map(item => (
           <button
-            key={s}
-            className={`header_tab ${strategy === s ? 'header_tab--active' : ''}`}
-            onClick={() => onStrategyChange(s)}
+            key={item}
+            className={`strategy-tabs__button ${strategy === item ? 'strategy-tabs__button--active' : ''}`}
+            type="button"
+            onClick={() => onStrategyChange(item)}
           >
-            {s}
+            {item}
           </button>
         ))}
       </nav>
