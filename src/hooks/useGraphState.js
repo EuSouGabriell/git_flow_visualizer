@@ -1,24 +1,54 @@
 import { useState, useCallback } from 'react';
 import STRATEGIES from '../data/strategies';
 
-const STEP = 80;
+const STEP = 88;
 
 function cloneGraph(graph) {
   return {
-    nodes: graph.nodes.map(n => ({ ...n })),
-    edges: graph.edges.map(e => ({ ...e })),
+    nodes: graph.nodes.map(node => ({ ...node })),
+    edges: graph.edges.map(edge => ({ ...edge })),
   };
 }
 
-function lastNodeOnBranch(nodes, branchId) {
-  const branch = nodes.filter(n => n.branchId === branchId);
-  if (!branch.length) return null;
-  return branch.reduce((a, b) => (a.x > b.x ? a : b));
+function getBranchNodes(nodes, branchId) {
+  return nodes
+    .filter(node => node.branchId === branchId)
+    .sort((left, right) => left.x - right.x);
 }
 
-function nextId(nodes, prefix) {
-  const count = nodes.filter(n => n.id.startsWith(prefix)).length;
-  return `${prefix}${count}`;
+function lastNodeOnBranch(nodes, branchId) {
+  const branchNodes = getBranchNodes(nodes, branchId);
+  return branchNodes[branchNodes.length - 1] ?? null;
+}
+
+function slugify(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'node';
+}
+
+function makeNodeId(nodes, prefix) {
+  const usedIds = new Set(nodes.map(node => node.id));
+  const slug = slugify(prefix);
+  let index = nodes.length + 1;
+  let id = `${slug}-${index}`;
+
+  while (usedIds.has(id)) {
+    index += 1;
+    id = `${slug}-${index}`;
+  }
+
+  return id;
+}
+
+function makeEdge(edges, type, from, to) {
+  return {
+    id: `${type}-${from}-${to}-${edges.length + 1}`,
+    from,
+    to,
+    type,
+  };
 }
 
 export default function useGraphState(strategy) {
@@ -32,90 +62,138 @@ export default function useGraphState(strategy) {
 
   const commit = useCallback((activeBranch) => {
     setGraphState(prev => {
+      if (!activeBranch) return prev;
+
       const nodes = [...prev.nodes];
       const last = lastNodeOnBranch(nodes, activeBranch);
+      const branchNodes = getBranchNodes(nodes, activeBranch);
       const x = last ? last.x + STEP : STEP;
-      const id = nextId(nodes, activeBranch[0]);
-      nodes.push({ id, branchId: activeBranch, x, label: '', type: 'commit' });
+
+      nodes.push({
+        id: makeNodeId(nodes, `${activeBranch}-commit`),
+        branchId: activeBranch,
+        x,
+        label: `c${branchNodes.length}`,
+        type: 'commit',
+      });
+
       return { nodes, edges: prev.edges };
     });
   }, []);
 
   const merge = useCallback((activeBranch, targetBranch) => {
     setGraphState(prev => {
+      if (!activeBranch || !targetBranch || activeBranch === targetBranch) return prev;
+
       const nodes = [...prev.nodes];
       const edges = [...prev.edges];
-      const srcLast = lastNodeOnBranch(nodes, activeBranch);
-      const tgtLast = lastNodeOnBranch(nodes, targetBranch);
-      if (!srcLast) return prev;
-      const x = Math.max(srcLast.x, tgtLast ? tgtLast.x : 0) + STEP;
-      const id = nextId(nodes, targetBranch[0] + 'm');
-      const newNode = { id, branchId: targetBranch, x, label: 'merge', type: 'merge' };
-      nodes.push(newNode);
-      edges.push({ from: srcLast.id, to: id, type: 'merge' });
+      const sourceLast = lastNodeOnBranch(nodes, activeBranch);
+      const targetLast = lastNodeOnBranch(nodes, targetBranch);
+
+      if (!sourceLast || !targetLast) return prev;
+
+      const id = makeNodeId(nodes, `${targetBranch}-merge`);
+      const x = Math.max(sourceLast.x, targetLast.x) + STEP;
+
+      nodes.push({
+        id,
+        branchId: targetBranch,
+        x,
+        label: 'merge',
+        type: 'merge',
+      });
+
+      edges.push(makeEdge(edges, 'merge', sourceLast.id, id));
+
       return { nodes, edges };
     });
   }, []);
 
   const rebase = useCallback((activeBranch, targetBranch) => {
     setGraphState(prev => {
-      const allNodes = prev.nodes;
-      const tgtLast = lastNodeOnBranch(allNodes, targetBranch);
-      if (!tgtLast) return prev;
+      if (!activeBranch || !targetBranch || activeBranch === targetBranch) return prev;
 
-      const srcNodes = allNodes
-        .filter(n => n.branchId === activeBranch)
-        .sort((a, b) => a.x - b.x);
+      const targetLast = lastNodeOnBranch(prev.nodes, targetBranch);
+      const activeNodes = getBranchNodes(prev.nodes, activeBranch);
 
-      let offset = tgtLast.x + STEP;
-      const updatedIds = new Map();
-      const updatedNodes = allNodes.map(n => {
-        if (n.branchId !== activeBranch) return n;
-        const updated = { ...n, x: offset };
-        updatedIds.set(n.id, updated.id);
-        offset += STEP;
-        return updated;
+      if (!targetLast || !activeNodes.length) return prev;
+
+      const nextPositions = new Map(
+        activeNodes.map((node, index) => [
+          node.id,
+          targetLast.x + STEP * (index + 1),
+        ])
+      );
+
+      const nodes = prev.nodes.map(node => {
+        if (!nextPositions.has(node.id)) return node;
+
+        return {
+          ...node,
+          x: nextPositions.get(node.id),
+          rebased: true,
+        };
       });
 
-      const rebaseEdge = srcNodes.length > 0
-        ? [{ from: tgtLast.id, to: srcNodes[0].id, type: 'rebase' }]
-        : [];
+      const firstActiveNode = activeNodes[0];
+      const edges = prev.edges.filter(edge => (
+        !['branch', 'rebase'].includes(edge.type) || edge.to !== firstActiveNode.id
+      ));
 
-      const edges = [
-        ...prev.edges.filter(e => e.type !== 'branch' || !srcNodes.find(n => n.id === e.to)),
-        ...rebaseEdge,
-      ];
+      edges.push(makeEdge(edges, 'rebase', targetLast.id, firstActiveNode.id));
 
-      return { nodes: updatedNodes, edges };
+      return { nodes, edges };
     });
   }, []);
 
-  const cherryPick = useCallback((activeBranch, selectedNode) => {
-    if (!selectedNode) return;
+  const cherryPick = useCallback((activeBranch, selectedNodeId) => {
+    if (!selectedNodeId) return;
+
     setGraphState(prev => {
+      if (!activeBranch) return prev;
+
       const nodes = [...prev.nodes];
       const edges = [...prev.edges];
-      const src = nodes.find(n => n.id === selectedNode);
-      if (!src || src.branchId === activeBranch) return prev;
+      const sourceNode = nodes.find(node => node.id === selectedNodeId);
+
+      if (!sourceNode || sourceNode.branchId === activeBranch) return prev;
+
       const last = lastNodeOnBranch(nodes, activeBranch);
       const x = last ? last.x + STEP : STEP;
-      const id = nextId(nodes, 'cp');
-      nodes.push({ id, branchId: activeBranch, x, label: '◆', type: 'cherry-pick' });
-      edges.push({ from: src.id, to: id, type: 'cherry-pick' });
+      const id = makeNodeId(nodes, `${activeBranch}-pick`);
+
+      nodes.push({
+        id,
+        branchId: activeBranch,
+        x,
+        label: sourceNode.label ? `pick ${sourceNode.label}` : 'pick',
+        type: 'cherry-pick',
+        sourceNodeId: sourceNode.id,
+      });
+
+      edges.push(makeEdge(edges, 'cherry-pick', sourceNode.id, id));
+
       return { nodes, edges };
     });
   }, []);
 
   const resetLast = useCallback((activeBranch) => {
     setGraphState(prev => {
+      if (!activeBranch) return prev;
+
       const last = lastNodeOnBranch(prev.nodes, activeBranch);
-      if (!last) return prev;
+      const initialNodeIds = new Set(
+        STRATEGIES[strategy].initialGraph.nodes.map(node => node.id)
+      );
+
+      if (!last || initialNodeIds.has(last.id)) return prev;
+
       return {
-        nodes: prev.nodes.filter(n => n.id !== last.id),
-        edges: prev.edges.filter(e => e.from !== last.id && e.to !== last.id),
+        nodes: prev.nodes.filter(node => node.id !== last.id),
+        edges: prev.edges.filter(edge => edge.from !== last.id && edge.to !== last.id),
       };
     });
-  }, []);
+  }, [strategy]);
 
   return { graphState, commit, merge, rebase, cherryPick, resetLast, reset };
 }
